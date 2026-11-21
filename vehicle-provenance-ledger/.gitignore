@@ -1,0 +1,15 @@
+# Runtime data (contains DEMO private keys - never commit)
+data/*
+!data/.gitkeep
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Node / Hardhat
+node_modules/
+artifacts/
+cache/
+typechain-types/
+coverage/
+.DS_Store
+.env

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ r.vin }} · Provenance Ledger{% endblock %}
+{% block body %}
+{% set reg = r.history[0].details or {} %}
+<section class="card vhead">
+  <div class="vmain">
+    <p class="eyebrow dark">Verified vehicle report</p>
+    <h1>{{ reg.make }} {{ reg.model }} <small>{{ reg.year }}</small></h1>
+    <p class="vin">{{ r.vin }}</p>
+    <p class="meta">Current owner <strong>{{ r.owner_name }}</strong> · {{ r.owners }} owner{{ '' if r.owners == 1 else 's' }} · {{ r.services }} service{{ '' if r.services == 1 else 's' }} · {{ r.accidents }} accident{{ '' if r.accidents == 1 else 's' }}</p>
+    <div class="odo" aria-label="Odometer {{ r.odometer }} kilometres">{% for d in ('%07d' % r.odometer) %}<span>{{ d }}</span>{% endfor %}<small>km</small></div>
+    <p class="mono small">On-chain ID (SHA-256 of VIN): {{ r.vin_hash|short(16) }}</p>
+  </div>
+  <div class="vscore">
+    {{ charts.gauge(r.trust.score, r.trust.grade)|safe }}
+    <p class="gl">Trust score · <b>{{ r.trust.label }}</b></p>
+    <div class="tags">{% if r.stolen %}<span class="tag danger">Stolen</span>{% endif %}{% if r.lien_holder %}<span class="tag warn">Lien</span>{% endif %}{% if not r.stolen and not r.lien_holder %}<span class="tag ok">No stolen flag or lien</span>{% endif %}</div>
+  </div>
+  <div class="vqr">
+    {{ qr_svg|safe }}
+    <p class="small">Scan to open this report</p>
+    <button class="ghost" onclick="window.print()" type="button">{{ icon('print') }}Print certificate</button>
+  </div>
+</section>
+
+{% if r.flags %}
+<ul class="flags">{% for level, text in r.flags %}<li class="{{ level }}">{{ text }}</li>{% endfor %}</ul>
+{% else %}
+<p class="flags-ok">{{ icon('check') }} No warnings. Every record verified against the blockchain.</p>
+{% endif %}
+
+<section class="grid2">
+  <article class="card">
+    <h2>Why this score</h2>
+    <p class="muted small">Starts at 100. Every deduction below is explained, so the score can be checked by hand.</p>
+    <ul class="factors">
+      {% for f in r.trust.factors %}
+        <li><span class="delta {{ 'neg' if f.delta < 0 else 'neu' }}">{{ f.delta if f.delta else '✓' }}</span><div><b>{{ f.label }}</b><br><span class="muted">{{ f.note }}</span></div></li>
+      {% endfor %}
+      {% if not r.trust.factors %}<li class="muted">No deductions.</li>{% endif %}
+    </ul>
+  </article>
+  <article class="card">
+    <h2>Odometer over time</h2>
+    {{ odo_chart|safe }}
+    <ul class="legend inline">
+      <li><i class="sw c-reg"></i>Registration</li><li><i class="sw c-svc"></i>Service</li><li><i class="sw c-acc"></i>Accident</li>
+      <li><i class="sw c-xfer"></i>Transfer</li><li><i class="sw c-lien"></i>Lien</li><li><i class="sw ring-sw"></i>Anomaly</li>
+    </ul>
+  </article>
+</section>
+
+<h2 class="sec">History</h2>
+<ol class="timeline">
+{% for h in r.history %}
+  {% set d = h.details or {} %}
+  <li class="ev {{ TYPE_CLASS[h.type] }}">
+    <div class="head">
+      <strong>{{ TYPE_LABEL[h.type] }}</strong>
+      <span class="tag {{ 'ok' if h.status=='verified' else 'danger' }}">{{ 'Verified' if h.status=='verified' else ('Tampered' if h.status=='tampered' else 'Details missing') }}</span>
+      <time>{{ h.timestamp|day }}</time>
+    </div>
+    <p>{{ '{:,}'.format(h.odometer) }} km · recorded by {{ h.actor_name }}</p>
+    {% if h.type == 'REGISTRATION' %}<p>Registered to {{ d.owner_name }} · plate {{ d.registration_no }}</p>
+    {% elif h.type == 'SERVICE' %}<p>{{ d.description }} · {{ d.cost_inr|inr }}</p>
+    {% elif h.type == 'ACCIDENT' %}<p>{{ d.severity|capitalize }}: {{ d.description }} (claim {{ d.claim_id }})</p>
+    {% elif h.type == 'OWNERSHIP_TRANSFER' %}<p>Sold to {{ h.to_name }} for {{ d.sale_price_inr|inr }}</p>
+    {% elif h.type == 'STATUS_CHANGE' %}<p>{{ 'Marked stolen' if d.stolen else 'Stolen flag cleared' }} · ref {{ d.fir_or_reference }}</p>
+    {% elif h.type == 'LIEN_PLACED' %}<p>Loan {{ d.loan_reference }} · {{ d.loan_amount_inr|inr }} · {{ d.lender }}</p>
+    {% elif h.type == 'LIEN_RELEASED' %}<p>Loan closed · ref {{ d.closure_reference }} · {{ d.lender }}</p>{% endif %}
+    <p class="mono small">hash {{ h.data_hash|short(16) }} · <a href="{{ url_for('verify', hash=h.data_hash) }}">verify</a></p>
+  </li>
+{% endfor %}
+</ol>
+<p class="noprint"><a class="button" href="{{ url_for('record', vin=r.vin) }}">{{ icon('plus') }}Add a record for this vehicle</a>
+ <a class="button ghost" href="{{ url_for('compare', a=r.vin) }}">{{ icon('compare') }}Compare with another</a></p>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Verify a document · Provenance Ledger{% endblock %}
+{% block body %}
+<h1>Verify a document</h1>
+<p class="muted">Anyone can check whether a document, record or hash is anchored on the ledger. Nothing is uploaded to the blockchain; the file is hashed here and compared with the on-chain hashes.</p>
+<div class="grid2">
+  <form method="post" enctype="multipart/form-data" class="card">
+    <h2>Check a record</h2>
+    <label>Paste a 64-character hash, a JSON record, or any text
+      <textarea name="text" rows="5" placeholder='e.g. 5afc16bb98cfcd37…  or {"description":"Oil change",…}'>{{ pre }}</textarea></label>
+    <label>…or choose a file <input type="file" name="file"></label>
+    <label>Transaction hash (optional) <input name="tx" class="mono" placeholder="tx hash to locate in a block"></label>
+    <button class="primary">{{ icon('search') }}Verify</button>
+  </form>
+  <article class="card">
+    <h2>How verification works</h2>
+    <ol class="steps">
+      <li><b>Hash.</b> Your input is hashed with SHA-256, exactly as the application does when a record is created.</li>
+      <li><b>Look up.</b> The hash is searched among every on-chain <code>data_hash</code>.</li>
+      <li><b>Compare.</b> A match shows which vehicle, event and signer it belongs to. If one character of the document changes, the hash changes and the match disappears.</li>
+    </ol>
+    <p class="muted small">A match proves the document existed unchanged when it was recorded and who signed it. It does not prove the content was true.</p>
+  </article>
+</div>
+{% if result %}
+<section class="card result {{ 'ok' if result.matches else 'none' }}">
+  {% if result.matches %}
+    <h2>{{ icon('check') }}Match found on the ledger</h2>
+    {% for m in result.matches %}
+      <div class="match"><b>{{ m.type.replace('_',' ').capitalize() }}</b> for <a class="mono" href="{{ url_for('vehicle', vin=m.vin) }}">{{ m.vin }}</a><br>
+      Signed by {{ m.actor_name }} · {{ m.timestamp|dt }} UTC · {{ '{:,}'.format(m.odometer) }} km · off-chain copy: <span class="tag {{ 'ok' if m.status=='verified' else 'danger' }}">{{ m.status }}</span><br>
+      <span class="mono small">{{ m.label }}: {{ m.digest }}</span></div>
+    {% endfor %}
+  {% elif result.digests %}
+    <h2>{{ icon('x') }}No match on the ledger</h2>
+    <p>This content is not anchored on the chain. If you expected a match, the document may have been edited after it was recorded.</p>
+    {% for label, d in result.digests %}<p class="mono small">{{ label }}: {{ d }}</p>{% endfor %}
+  {% endif %}
+  {% if result.tx_query %}
+    {% if result.tx %}<div class="match"><b>Transaction found</b> in block #{{ result.tx.block }}: {{ result.tx.fn }} by {{ result.tx.sender }} · {{ result.tx.timestamp|dt }} UTC</div>
+    {% else %}<div class="match">Transaction hash not found on this chain.</div>{% endif %}
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

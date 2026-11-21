@@ -1,0 +1,68 @@
+{
+ "machine": "Linux x86_64, Python 3.12.3",
+ "crypto_ms": {
+  "sha256_1kb": 0.0013,
+  "ed25519_sign": 0.038,
+  "ed25519_verify": 0.1256
+ },
+ "in_memory": [
+  {
+   "blocks": 50,
+   "tx_per_s": 3907.4,
+   "validate_ms": 13.6,
+   "rebuild_ms": 0.1
+  },
+  {
+   "blocks": 100,
+   "tx_per_s": 4005.5,
+   "validate_ms": 28.3,
+   "rebuild_ms": 0.1
+  },
+  {
+   "blocks": 200,
+   "tx_per_s": 3933.6,
+   "validate_ms": 55.6,
+   "rebuild_ms": 0.3
+  },
+  {
+   "blocks": 400,
+   "tx_per_s": 3707.3,
+   "validate_ms": 116.6,
+   "rebuild_ms": 0.6
+  },
+  {
+   "blocks": 800,
+   "tx_per_s": 4015.8,
+   "validate_ms": 221.4,
+   "rebuild_ms": 1.1
+  }
+ ],
+ "with_json_persistence": [
+  {
+   "blocks": 50,
+   "tx_per_s": 527.7,
+   "file_kb": 60.6
+  },
+  {
+   "blocks": 100,
+   "tx_per_s": 357.2,
+   "file_kb": 120.1
+  },
+  {
+   "blocks": 200,
+   "tx_per_s": 193.1,
+   "file_kb": 239.6
+  },
+  {
+   "blocks": 400,
+   "tx_per_s": 107.1,
+   "file_kb": 478.4
+  }
+ ],
+ "storage_bytes": {
+  "avg_offchain_json": 134,
+  "onchain_record_solidity": 65,
+  "onchain_hash_only": 32,
+  "saving_pct": 76
+ }
+}

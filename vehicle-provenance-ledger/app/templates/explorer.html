@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Block explorer · Provenance Ledger{% endblock %}
+{% block body %}
+<h1>Block explorer</h1>
+<p class="integrity {{ 'good' if ok else 'bad' }}">
+  {% if ok %}Chain valid: hashes, links, Merkle roots, validator turns, signatures and contract rules all re-verified.{% else %}Chain invalid:{% endif %}</p>
+{% if errs %}<ul class="flags">{% for e in errs[:12] %}<li class="danger">{{ e }}</li>{% endfor %}</ul>{% endif %}
+<p class="muted">Consensus: proof of authority. {{ validators|length }} validators ({% for v in validators %}{{ v.name }}{{ ', ' if not loop.last }}{% endfor %}) seal blocks in turn.</p>
+<div class="chainstrip" aria-label="Recent blocks">
+  {% for b in blocks[:14]|reverse|list %}<a href="#b{{ b.index }}" class="cb"><b>#{{ b.index }}</b><small>{{ b.transactions|length }} tx</small><i class="mono">{{ b.hash[:6] }}</i></a>{% if not loop.last %}<span class="cl"></span>{% endif %}{% endfor %}
+</div>
+{% for b in blocks %}
+<article class="block card" id="b{{ b.index }}">
+  <header><h2>Block #{{ b.index }}</h2><time>{{ b.timestamp|dt }} UTC</time></header>
+  <dl>
+    <dt>Hash</dt><dd class="mono">{{ b.hash }}</dd>
+    <dt>Previous hash</dt><dd class="mono">{{ b.prev_hash }}</dd>
+    <dt>Merkle root</dt><dd class="mono">{{ b.merkle_root }}</dd>
+    <dt>Sealed by</dt><dd>{{ 'Genesis' if b.index == 0 else (validators|selectattr('address','equalto',b.validator)|map(attribute='name')|first) }}</dd>
+  </dl>
+  {% for tx in b.transactions %}
+  <div class="tx"><strong>{{ tx.fn }}</strong> from {{ names.get(tx.sender, tx.sender) }}
+    <span class="mono small">tx {{ tx.tx_hash|short(12) }} · nonce {{ tx.nonce }}</span></div>
+  {% endfor %}
+</article>
+{% endfor %}
+{% endblock %}

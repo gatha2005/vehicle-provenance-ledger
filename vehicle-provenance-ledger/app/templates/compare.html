@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Compare vehicles · Provenance Ledger{% endblock %}
+{% block body %}
+<h1>Compare two vehicles</h1>
+<p class="muted">Side-by-side view of two vehicles on the ledger. Better values are highlighted.</p>
+<form method="get" class="card compare-form">
+  <label>Vehicle A <select name="a">{% for v in vehicles %}<option value="{{ v.vin }}" {{ 'selected' if v.vin == a }}>{{ v.vin }} · {{ v.make }} {{ v.model }}</option>{% endfor %}</select></label>
+  <label>Vehicle B <select name="b">{% for v in vehicles %}<option value="{{ v.vin }}" {{ 'selected' if v.vin == b }}>{{ v.vin }} · {{ v.make }} {{ v.model }}</option>{% endfor %}</select></label>
+  <button class="primary">Compare</button>
+</form>
+{% if reports|length == 2 %}
+{% set A, B = reports %}
+{% macro row(label, a, b, better=None, fmt=None) %}
+  {% set wa = (better == 'high' and a > b) or (better == 'low' and a < b) %}{% set wb = (better == 'high' and b > a) or (better == 'low' and b < a) %}
+  <tr><th>{{ label }}</th><td class="{{ 'win' if wa }}">{{ a if fmt != 'km' else '{:,} km'.format(a) }}</td><td class="{{ 'win' if wb }}">{{ b if fmt != 'km' else '{:,} km'.format(b) }}</td></tr>
+{% endmacro %}
+<div class="cmp-head">
+  {% for R in (A, B) %}<div class="card center"><a class="mono" href="{{ url_for('vehicle', vin=R.vin) }}">{{ R.vin }}</a>
+    <h2>{{ (R.history[0].details or {}).make }} {{ (R.history[0].details or {}).model }}</h2>{{ charts.gauge(R.trust.score, R.trust.grade)|safe }}<p><b>{{ R.trust.label }}</b></p></div>{% endfor %}
+</div>
+<div class="card scroll"><table class="cmp">
+  <thead><tr><th></th><th>Vehicle A</th><th>Vehicle B</th></tr></thead>
+  <tbody>
+  {{ row('Trust score', A.trust.score, B.trust.score, 'high') }}
+  {{ row('Odometer', A.odometer, B.odometer, None, 'km') }}
+  {{ row('Owners', A.owners, B.owners, 'low') }}
+  {{ row('Accidents', A.accidents, B.accidents, 'low') }}
+  {{ row('Services', A.services, B.services, 'high') }}
+  {{ row('Records on ledger', A.history|length, B.history|length) }}
+  <tr><th>Stolen flag</th><td class="{{ 'bad' if A.stolen else 'win' }}">{{ 'Yes' if A.stolen else 'No' }}</td><td class="{{ 'bad' if B.stolen else 'win' }}">{{ 'Yes' if B.stolen else 'No' }}</td></tr>
+  <tr><th>Active lien</th><td class="{{ 'bad' if A.lien_holder else 'win' }}">{{ A.lien_holder_name or 'None' }}</td><td class="{{ 'bad' if B.lien_holder else 'win' }}">{{ B.lien_holder_name or 'None' }}</td></tr>
+  <tr><th>Current owner</th><td>{{ A.owner_name }}</td><td>{{ B.owner_name }}</td></tr>
+  </tbody></table></div>
+{% endif %}
+{% endblock %}

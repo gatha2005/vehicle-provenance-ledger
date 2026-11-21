@@ -1,0 +1,51 @@
+{% from "_icons.html" import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Provenance Ledger · verified vehicle history{% endblock %}</title>
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo" aria-hidden="true"></span>Provenance<span>Ledger</span></a>
+    <nav aria-label="Main">
+      <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>{{ icon('grid') }}Dashboard</a>
+      <a href="{{ url_for('record') }}" {% if request.endpoint == 'record' %}aria-current="page"{% endif %}>{{ icon('plus') }}Add record</a>
+      <a href="{{ url_for('verify') }}" {% if request.endpoint == 'verify' %}aria-current="page"{% endif %}>{{ icon('search') }}Verify</a>
+      <a href="{{ url_for('compare') }}" {% if request.endpoint == 'compare' %}aria-current="page"{% endif %}>{{ icon('compare') }}Compare</a>
+      <a href="{{ url_for('explorer') }}" {% if request.endpoint == 'explorer' %}aria-current="page"{% endif %}>{{ icon('box') }}Explorer</a>
+      <a href="{{ url_for('security') }}" {% if request.endpoint == 'security' %}aria-current="page"{% endif %}>{{ icon('lock') }}Security</a>
+      <a href="{{ url_for('tamper_lab') }}" {% if request.endpoint == 'tamper_lab' %}aria-current="page"{% endif %}>{{ icon('flask') }}Tamper lab</a>
+    </nav>
+    <form class="actor" method="post" action="{{ url_for('set_actor') }}">
+      <input type="hidden" name="next" value="{{ request.full_path if request.method == 'GET' else url_for('record') }}">
+      <label for="actor-pick">Acting as</label>
+      <select id="actor-pick" name="actor" onchange="this.form.submit()">
+        <option value="">(choose per form)</option>
+        {% for k, n in actors %}<option value="{{ k }}" {% if k == current_actor %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </form>
+    <button class="icon-btn" id="theme" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">{{ icon('moon') }}</button>
+    <span class="chip" title="Height of the chain">Block #{{ height }}</span>
+  </div>
+</header>
+{% block hero %}{% endblock %}
+<main class="wrap">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="flash {{ cat }}" role="status">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block body %}{% endblock %}
+</main>
+<footer class="wrap foot">Prototype with synthetic data only. The ledger proves a record was not altered; it cannot prove the original entry was true.</footer>
+<script>
+document.getElementById('theme').addEventListener('click',function(){
+  var d=document.documentElement,cur=d.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  var n=cur==='dark'?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){}});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

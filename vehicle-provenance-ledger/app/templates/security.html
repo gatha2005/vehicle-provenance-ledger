@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Security centre · Provenance Ledger{% endblock %}
+{% block body %}
+<h1>Security centre</h1>
+<p class="muted">Live integrity checks, every fraud attempt the contract has blocked, and who holds which role.</p>
+<section class="card">
+  <h2>Integrity checks <span class="tag {{ 'ok' if ok else 'danger' }}">{{ 'All passed' if ok else 'Failed' }}</span></h2>
+  <ul class="checks">{% for label, passed in checks %}<li class="{{ 'p' if passed else 'f' }}">{{ icon('check' if passed else 'x') }}{{ label }}</li>{% endfor %}</ul>
+  {% if errs %}<ul class="flags">{% for e in errs[:10] %}<li class="danger">{{ e }}</li>{% endfor %}</ul>{% endif %}
+</section>
+<section class="grid2">
+  <article class="card"><h2>Blocked attempts by type</h2>{{ charts.hbar(rej, 'c-acc')|safe }}</article>
+  <article class="card"><h2>Validator schedule</h2>
+    <table><thead><tr><th>Turn</th><th>Validator</th><th>Address</th></tr></thead><tbody>
+    {% for v in validators %}<tr><td>{{ loop.index0 }}</td><td>{{ v.name }}</td><td class="mono small">{{ v.address|short(12) }}</td></tr>{% endfor %}</tbody></table>
+    <p class="muted small">Block <i>n</i> must be sealed by validator <i>n mod 3</i>.</p></article>
+</section>
+<section class="card">
+  <h2>Fraud attempts blocked ({{ log|length }} shown)</h2>
+  {% if log %}<div class="scroll"><table><thead><tr><th>When</th><th>Who</th><th>Tried to</th><th>Category</th><th>Reason given by the contract</th></tr></thead><tbody>
+  {% for l in log %}<tr><td>{{ l.ts|dt }}</td><td>{{ l.actor }}</td><td class="mono small">{{ l.fn }}</td><td><span class="tag danger">{{ l.category }}</span></td><td>{{ l.reason }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="empty">No rejected attempts yet. Try a rollback on the <a href="{{ url_for('record') }}">Add record</a> page.</p>{% endif %}
+</section>
+<section class="card">
+  <h2>Role registry</h2>
+  <table><thead><tr><th>Account</th><th>Role</th></tr></thead><tbody>
+  {% for n, r in roles %}<tr><td>{{ n }}</td><td><span class="tag ok">{{ r }}</span></td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

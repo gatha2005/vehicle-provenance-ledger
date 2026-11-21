@@ -1,0 +1,16 @@
+{
+  "name": "vehicle-provenance-ledger",
+  "version": "1.0.0",
+  "description": "Solidity smart contract and Hardhat tests for the Vehicle Lifecycle & Used-Car Provenance Ledger",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "license": "MIT"
+}

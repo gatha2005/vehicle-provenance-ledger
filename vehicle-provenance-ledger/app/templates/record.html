@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Add a record · Provenance Ledger{% endblock %}
+{% macro actor_select(default) %}
+<label>Sign as
+  <select name="actor">{% for k, n in actors %}<option value="{{ k }}" {{ 'selected' if k == (current_actor or default) }}>{{ n }}</option>{% endfor %}</select>
+</label>
+{% endmacro %}
+{% macro vin_field() %}<label>VIN <input name="vin" value="{{ prefill }}" maxlength="17" required autocomplete="off" class="mono"></label>{% endmacro %}
+{% block body %}
+<h1>Add a record</h1>
+<p class="muted">Choose who signs. The smart contract accepts or rejects each action based on that account’s role. Try the wrong role or a lower odometer on purpose to see a rejection (the attempt is logged on the Security page).</p>
+<div class="forms">
+<form method="post" class="card"><input type="hidden" name="kind" value="register"><h2><span class="step">1</span>Register a vehicle</h2><p class="role">Role: Registrar</p>
+  {{ actor_select('registrar') }}{{ vin_field() }}
+  <label>Make <input name="make" value="Tata" required></label>
+  <label>Model <input name="model" value="Nexon" required></label>
+  <label>Year <input name="year" type="number" value="2025" required></label>
+  <label>Plate number <input name="reg_no" value="MH01AB1234" required></label>
+  <label>First owner <select name="owner">{% for k, n in owners %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select></label>
+  <label>Odometer (km) <input name="odometer" type="number" min="0" value="0" required></label>
+  <button class="primary">Register vehicle</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="service"><h2><span class="step">2</span>Log a service</h2><p class="role">Role: Service centre</p>
+  {{ actor_select('service') }}{{ vin_field() }}
+  <label>Odometer (km) <input name="odometer" type="number" min="0" required></label>
+  <label>Work done <input name="description" value="Oil and filter change" required></label>
+  <label>Cost (₹) <input name="cost" type="number" min="0" value="3500" required></label>
+  <button class="primary">Log service</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="accident"><h2><span class="step">3</span>Report an accident</h2><p class="role">Role: Insurer</p>
+  {{ actor_select('insurer') }}{{ vin_field() }}
+  <label>Odometer (km) <input name="odometer" type="number" min="0" required></label>
+  <label>Severity <select name="severity"><option>minor</option><option>major</option><option>total loss</option></select></label>
+  <label>What happened <input name="description" value="Rear bumper damage" required></label>
+  <label>Claim ID <input name="claim_id" value="CLM-0001" required></label>
+  <button class="primary">Report accident</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="transfer"><h2><span class="step">4</span>Transfer ownership</h2><p class="role">Role: current owner only</p>
+  {{ actor_select('asha') }}{{ vin_field() }}
+  <label>New owner <select name="new_owner">{% for k, n in owners %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select></label>
+  <label>Odometer at sale (km) <input name="odometer" type="number" min="0" required></label>
+  <label>Sale price (₹) <input name="price" type="number" min="0" value="600000" required></label>
+  <button class="primary">Transfer ownership</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="lien"><h2><span class="step">5</span>Place a lien (loan)</h2><p class="role">Role: Lender</p>
+  {{ actor_select('lender') }}{{ vin_field() }}
+  <label>Loan reference <input name="loan_ref" value="LN-2026-0001" required></label>
+  <label>Loan amount (₹) <input name="amount" type="number" min="0" value="500000" required></label>
+  <button class="primary">Place lien</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="unlien"><h2><span class="step">6</span>Release a lien</h2><p class="role">Role: the lender that placed it</p>
+  {{ actor_select('lender') }}{{ vin_field() }}
+  <label>Closure reference <input name="reference" value="NOC-2026-0001" required></label>
+  <button class="primary">Release lien</button></form>
+
+<form method="post" class="card"><input type="hidden" name="kind" value="stolen"><h2><span class="step">7</span>Stolen flag</h2><p class="role">Role: Registrar</p>
+  {{ actor_select('registrar2') }}{{ vin_field() }}
+  <label>Status <select name="stolen"><option value="1">Mark as stolen</option><option value="0">Clear stolen flag</option></select></label>
+  <label>FIR or reference <input name="reference" value="FIR-2026-0001" required></label>
+  <button class="primary">Update status</button></form>
+</div>
+{% endblock %}

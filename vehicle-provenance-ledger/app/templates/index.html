@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block hero %}
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="pulse {{ '' if ok else 'bad' }}"></span>{{ 'Ledger verified' if ok else 'Integrity alert' }} · {{ st.blocks }} blocks · 3 validators</p>
+      <h1>Know a car’s real history before you buy it.</h1>
+      <p class="lead">Every service, accident, loan and sale is signed by the party who made it, checked by smart-contract rules and sealed into a block. Enter a VIN for a verified report with an explainable trust score.</p>
+      <form action="{{ url_for('vehicle_lookup') }}" class="lookup" role="search">
+        <label for="vin">Vehicle identification number (VIN)</label>
+        <div class="row">
+          <input id="vin" name="vin" placeholder="e.g. MA3ERLF1S00123456" maxlength="17" required autocomplete="off">
+          <button class="primary">Check history</button>
+        </div>
+      </form>
+      {% if vehicles %}<p class="try">Try:
+        {% for v in vehicles[:4] %}<a href="{{ url_for('vehicle', vin=v.vin) }}">{{ v.vin }}</a>{% endfor %}</p>{% endif %}
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="mini"><b>Block #{{ st.blocks - 2 if st.blocks > 2 else 0 }}</b><i>prev 7be1…94d0</i><i>root 3c9a…e1f2</i></div>
+      <div class="link"></div>
+      <div class="mini hot"><b>Block #{{ st.blocks - 1 if st.blocks > 1 else 0 }}</b><i>prev c04d…11aa</i><i>root 19e8…b7f3</i></div>
+      <div class="link"></div>
+      <div class="mini"><b>Block #{{ st.blocks }}</b><i>prev 19e8…b7f3</i><i>root a2d7…04c9</i></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block body %}
+<section class="kpis" aria-label="Key figures">
+  <div class="kpi"><span>Vehicles</span><b>{{ st.vehicles }}</b><small>{{ st.stolen }} flagged stolen · {{ st.liens }} with a lien</small></div>
+  <div class="kpi"><span>Events recorded</span><b>{{ st.events }}</b><small>signed and sealed</small></div>
+  <div class="kpi"><span>Fraud attempts blocked</span><b class="warn">{{ st.rejected }}</b><small>rejected by contract rules</small></div>
+  <div class="kpi"><span>Average trust score</span><b>{{ st.avg_score }}</b><small>across all vehicles</small></div>
+  <div class="kpi"><span>Chain status</span><b class="{{ 'good' if ok else 'bad' }}">{{ 'Valid' if ok else 'Broken' }}</b><small>re-verified on every load</small></div>
+</section>
+
+<section class="grid3">
+  <article class="card">
+    <h2>Events by type</h2>
+    <div class="donut-wrap">
+      {{ charts.donut(events)|safe }}
+      <ul class="legend">{% for lab, v, cls in events %}<li><i class="sw {{ cls }}"></i>{{ lab }} <b>{{ v }}</b></li>{% endfor %}</ul>
+    </div>
+  </article>
+  <article class="card span2">
+    <h2>Ledger activity by month</h2>
+    {{ charts.line(months, title='Events per month')|safe }}
+  </article>
+</section>
+
+<section class="grid2">
+  <article class="card">
+    <h2>Fraud attempts blocked by reason</h2>
+    {{ charts.hbar(rejections, 'c-acc')|safe }}
+  </article>
+  <article class="card">
+    <h2>Trust grade distribution</h2>
+    {{ charts.bar(grades, 'c-reg', title='Vehicles per grade')|safe }}
+  </article>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Vehicles on the ledger</h2>
+    <div class="filters">
+      <input id="filter" type="search" placeholder="Filter by VIN, model or owner" aria-label="Filter vehicles">
+      <button class="chipbtn on" data-g="">All</button>
+      {% for g in 'ABCDE' %}<button class="chipbtn" data-g="{{ g }}">Grade {{ g }}</button>{% endfor %}
+    </div>
+  </div>
+  {% if vehicles %}
+  <div class="scroll"><table id="vt">
+    <thead><tr><th>VIN</th><th>Vehicle</th><th>Owner</th><th class="num">Odometer</th><th class="num">Events</th><th>Flags</th><th>Trust</th></tr></thead>
+    <tbody>
+    {% for v in vehicles %}
+      <tr data-g="{{ v.trust.grade }}" data-s="{{ (v.vin ~ ' ' ~ v.make ~ ' ' ~ v.model ~ ' ' ~ v.owner_name)|lower }}">
+        <td><a class="mono" href="{{ url_for('vehicle', vin=v.vin) }}">{{ v.vin }}</a></td>
+        <td>{{ v.make }} {{ v.model }} <small class="muted">{{ v.year }}</small></td><td>{{ v.owner_name }}</td>
+        <td class="num">{{ '{:,}'.format(v.odometer) }} km</td><td class="num">{{ v.events }}</td>
+        <td>{% if v.stolen %}<span class="tag danger">Stolen</span>{% endif %}{% if v.lien %}<span class="tag warn">Lien</span>{% endif %}{% if v.accidents %}<span class="tag warn">{{ v.accidents }} accident{{ 's' if v.accidents > 1 }}</span>{% endif %}{% if not (v.stolen or v.lien or v.accidents) %}<span class="tag ok">Clear</span>{% endif %}</td>
+        <td><span class="grade g-{{ v.trust.grade }}">{{ v.trust.grade }}</span> <b>{{ v.trust.score }}</b></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="empty">No vehicles yet. <a href="{{ url_for('record') }}">Register the first vehicle</a>, or run <code>python scripts/seed_demo.py</code> to load sample data.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){var rows=[].slice.call(document.querySelectorAll('#vt tbody tr')),q=document.getElementById('filter'),g='';
+function f(){var s=(q.value||'').toLowerCase();rows.forEach(function(r){r.hidden=!((!g||r.dataset.g===g)&&r.dataset.s.indexOf(s)>-1)})}
+if(q)q.addEventListener('input',f);
+[].forEach.call(document.querySelectorAll('.chipbtn'),function(b){b.addEventListener('click',function(){g=b.dataset.g;
+[].forEach.call(document.querySelectorAll('.chipbtn'),function(x){x.classList.toggle('on',x===b)});f()})});})();
+</script>
+{% endblock %}

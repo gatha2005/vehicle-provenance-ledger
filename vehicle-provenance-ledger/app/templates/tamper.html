@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Tamper lab · Provenance Ledger{% endblock %}
+{% block body %}
+<h1>Tamper lab</h1>
+<p class="muted">Launch an attack against a <b>copy</b> of the ledger and watch the verification catch it. The real ledger is never modified.</p>
+<div class="attacks">
+  {% for k, (title, story) in attacks.items() %}
+  <a class="card attack {{ 'on' if k == kind }}" href="{{ url_for('tamper_lab', attack=k) }}#result">
+    <span class="step">{{ loop.index }}</span><h2>{{ title }}</h2><p class="muted">{{ story }}</p><span class="button">Run attack</span></a>
+  {% endfor %}
+</div>
+{% if result %}
+<section id="result" class="card result {{ 'ok' if result.detected else 'none' }}">
+  <h2>{{ icon('check') if result.detected else icon('x') }}{{ 'Attack detected' if result.detected else 'Attack NOT detected' }}</h2>
+  <p><b>{{ result.title }}.</b> {{ result.what }}.</p>
+  {% if result.errors %}<p class="muted">What the verifier reported ({{ result.total }} error{{ '' if result.total == 1 else 's' }}):</p>
+  <ul class="flags">{% for e in result.errors %}<li class="danger">{{ e }}</li>{% endfor %}</ul>{% endif %}
+</section>
+{% endif %}
+{% endblock %}
